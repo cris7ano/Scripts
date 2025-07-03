@@ -1,0 +1,208 @@
+--[[
+    Float Script for Roblox Studio (VexuHub UI)
+    Place this LocalScript inside StarterGui > ScreenGui > Float (or as appropriate)
+    This script creates a floating UI and toggles float/forward movement.
+]]
+
+-- Services
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- UI Creation
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "VexuHubFloatGui"
+screenGui.Parent = game:GetService("CoreGui")
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 340, 0, 200)
+frame.Position = UDim2.new(0.5, -170, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+frame.BorderSizePixel = 0
+frame.AnchorPoint = Vector2.new(0.5, 0)
+frame.Parent = screenGui
+frame.Active = true
+frame.Draggable = true
+
+-- Add rounded corners
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 18)
+frameCorner.Parent = frame
+
+-- Add drop shadow
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageTransparency = 0.4
+shadow.Size = UDim2.new(1, 30, 1, 30)
+shadow.Position = UDim2.new(0, -15, 0, -10)
+shadow.ZIndex = 0
+shadow.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Text = "VexuHub"
+title.Size = UDim2.new(1, 0, 0, 54)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(160, 80, 255)
+title.Font = Enum.Font.GothamBold
+-- GothamBold for classic look
+
+title.TextSize = 38
+title.TextStrokeTransparency = 0.4
+title.TextStrokeColor3 = Color3.fromRGB(60, 30, 80)
+title.TextXAlignment = Enum.TextXAlignment.Center
+title.TextYAlignment = Enum.TextYAlignment.Center
+title.ZIndex = 2
+title.Parent = frame
+
+-- Add title drop shadow
+local titleShadow = Instance.new("TextLabel")
+titleShadow.Text = "VexuHub"
+titleShadow.Size = title.Size
+titleShadow.Position = title.Position
+titleShadow.BackgroundTransparency = 1
+titleShadow.TextColor3 = Color3.fromRGB(40, 20, 60)
+titleShadow.Font = title.Font
+titleShadow.TextSize = title.TextSize
+titleShadow.TextStrokeTransparency = 1
+titleShadow.TextTransparency = 0.5
+titleShadow.TextXAlignment = title.TextXAlignment
+titleShadow.TextYAlignment = title.TextYAlignment
+titleShadow.ZIndex = 1
+titleShadow.Parent = frame
+
+local button = Instance.new("TextButton")
+button.Text = "Float"
+button.Size = UDim2.new(0.7, 0, 0, 54)
+button.Position = UDim2.new(0.15, 0, 0.5, 8)
+button.BackgroundColor3 = Color3.fromRGB(90, 40, 200)
+button.TextColor3 = Color3.new(1,1,1)
+button.Font = Enum.Font.GothamSemibold
+button.TextSize = 26
+button.AutoButtonColor = true
+button.Parent = frame
+button.BorderSizePixel = 0
+button.Name = "FloatButton"
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(180, 120, 255)
+stroke.Thickness = 2
+stroke.Parent = button
+
+local info = Instance.new("TextLabel")
+info.Text = "Click to float & move forward for 5s.\nClick again to stop."
+info.Size = UDim2.new(1, -10, 0, 38)
+info.Position = UDim2.new(0, 5, 1, -43)
+info.BackgroundTransparency = 1
+info.TextColor3 = Color3.fromRGB(180,180,200)
+info.Font = Enum.Font.Gotham
+info.TextSize = 14
+info.TextWrapped = true
+info.Parent = frame
+
+local button = Instance.new("TextButton")
+button.Text = "Float"
+button.Size = UDim2.new(0.7, 0, 0, 54)
+button.Position = UDim2.new(0.15, 0, 0.5, 8)
+button.BackgroundColor3 = Color3.fromRGB(90, 40, 200)
+button.TextColor3 = Color3.new(1,1,1)
+button.Font = Enum.Font.GothamSemibold
+button.TextSize = 26
+button.AutoButtonColor = true
+button.Parent = frame
+button.BorderSizePixel = 0
+button.Name = "FloatButton"
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(180, 120, 255)
+stroke.Thickness = 2
+stroke.Parent = button
+
+local info = Instance.new("TextLabel")
+info.Text = "Click to float & move forward for 5s.\nClick again to stop."
+info.Size = UDim2.new(1, -10, 0, 38)
+info.Position = UDim2.new(0, 5, 1, -43)
+info.BackgroundTransparency = 1
+info.TextColor3 = Color3.fromRGB(180,180,200)
+info.Font = Enum.Font.Gotham
+info.TextSize = 14
+info.TextWrapped = true
+info.Parent = frame
+
+-- Float Logic
+local floating = false
+local floatBP, floatBV
+local floatConn, floatTimeout
+
+local function getRoot()
+    character = player.Character or player.CharacterAdded:Wait()
+    return character:FindFirstChild("HumanoidRootPart")
+end
+
+local function cleanup()
+    if floatBP then floatBP:Destroy() floatBP = nil end
+    if floatBV then floatBV:Destroy() floatBV = nil end
+    if floatConn then floatConn:Disconnect() floatConn = nil end
+    if floatTimeout then floatTimeout:Disconnect() floatTimeout = nil end
+end
+
+local function startFloating()
+    if floating then return end
+    local root = getRoot()
+    if not root then return end
+    floating = true
+    button.Text = "Stop"
+    cleanup()
+    -- BodyPosition for float
+    floatBP = Instance.new("BodyPosition")
+    floatBP.MaxForce = Vector3.new(0, math.huge, 0)
+    floatBP.Position = root.Position + Vector3.new(0, 20, 0)
+    floatBP.D = 1000
+    floatBP.P = 20000
+    floatBP.Parent = root
+    -- BodyVelocity for forward
+    floatBV = Instance.new("BodyVelocity")
+    floatBV.MaxForce = Vector3.new(math.huge, 0, math.huge)
+    floatBV.Velocity = root.CFrame.LookVector * 40 -- Increased speed
+    floatBV.Parent = root
+    -- Gentle bobbing
+    local startTime = tick()
+    floatConn = RunService.RenderStepped:Connect(function()
+        if not floating then return end
+        if not root or not root.Parent then stopFloating() return end
+        floatBP.Position = Vector3.new(root.Position.X, (root.Position.Y - (root.Position.Y % 0.01)) + math.sin((tick()-startTime)*2)*0.6, root.Position.Z)
+        floatBV.Velocity = root.CFrame.LookVector * 40 -- Increased speed
+    end)
+    -- Auto stop after 5s
+    floatTimeout = RunService.RenderStepped:Connect(function()
+        if tick()-startTime > 5 then stopFloating() end
+    end)
+end
+
+function stopFloating()
+    if not floating then return end
+    floating = false
+    button.Text = "Float"
+    cleanup()
+end
+
+button.MouseButton1Click:Connect(function()
+    if floating then stopFloating() else startFloating() end
+end)
+
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    floating = false
+    cleanup()
+    setCharacterCollision(true)
+    button.Text = "Float"
+end)
+
+script.Destroying:Connect(cleanup)
