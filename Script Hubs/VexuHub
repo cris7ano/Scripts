@@ -162,23 +162,24 @@ local function startFloating()
     -- BodyPosition for float
     floatBP = Instance.new("BodyPosition")
     floatBP.MaxForce = Vector3.new(0, math.huge, 0)
-    floatBP.Position = root.Position + Vector3.new(0, 20, 0)
     floatBP.D = 1000
     floatBP.P = 20000
     floatBP.Parent = root
     -- BodyVelocity for forward
     floatBV = Instance.new("BodyVelocity")
     floatBV.MaxForce = Vector3.new(math.huge, 0, math.huge)
-    floatBV.Velocity = root.CFrame.LookVector * 40 -- Increased speed
     floatBV.Parent = root
     -- Gentle bobbing
     local startTime = tick()
+    local baseFloatY = root.Position.Y + 20
     floatConn = RunService.RenderStepped:Connect(function()
         if not floating then return end
         if not root or not root.Parent then stopFloating() return end
-        floatBP.Position = Vector3.new(root.Position.X, (root.Position.Y - (root.Position.Y % 0.01)) + math.sin((tick()-startTime)*2)*0.6, root.Position.Z)
+        local bob = math.sin((tick()-startTime)*2)*0.6
+        floatBP.Position = Vector3.new(root.Position.X, baseFloatY + bob, root.Position.Z)
         floatBV.Velocity = root.CFrame.LookVector * 40 -- Increased speed
     end)
+
     -- Auto stop after 5s
     floatTimeout = RunService.RenderStepped:Connect(function()
         if tick()-startTime > 5 then stopFloating() end
@@ -190,6 +191,7 @@ function stopFloating()
     floating = false
     button.Text = "Float"
     cleanup()
+    -- Let the player drop naturally at their current position
 end
 
 button.MouseButton1Click:Connect(function()
